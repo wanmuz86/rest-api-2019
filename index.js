@@ -63,6 +63,36 @@ router.route('/kindergartens/:id')
 		}
 	})
 })
+
+router.route('/kindergartens/:id')
+.post(function(req,res){
+	Kindergarten.findById(req.params.id,function(err,kindergarten){
+		if(err){
+			res.error(err)
+		}
+		else {
+			kindergarten.name = req.body.name;
+			kindergarten.description = req.body.description;
+			kindergarten.email = req.body.email;
+			kindergarten.phone = req.body.phone;
+			kindergarten.url = req.body.url;
+			kindergarten.opening_hours = req.body.opening_hours;
+			kindergarten.image_url = req.body.image_url;
+			kindergarten.latitude = req.body.latitude;
+			kindergarten.longitude = req.body.longitude;
+
+			kindergarten.save(function(err){
+				if (err){
+					res.error(err)
+				}
+				else {
+					res.send({message:'Kindergarten succesfully updated!'})
+				}
+			})
+
+		}
+	})
+})
 app.use('/api',router);
 
 app.listen(port)
