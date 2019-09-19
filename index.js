@@ -3,7 +3,10 @@ var app = express();
 var bodyParser = require('body-parser');
 var mongoose = require('mongoose');
 var Kindergarten = require('./kindergarten')
-
+var User = require('./user')
+var auth = require('./auth')()
+var jwt = require('jsonwebtoken')
+var config = require('./config')
 mongoose.connect('mongodb+srv://apiuser:abcd1234@cluster0-khxyy.mongodb.net/test?retryWrites=true&w=majority')
 
 
@@ -74,9 +77,9 @@ router.route('/kindergartens/:id/reviews')
 	Kindergarten.findById(req.params.id, function(err,kindergarten){
 		if (kindergarten.reviews.length > 0){
 			console.log("scenario a",newReview.rating)
-		
+
 			kindergarten.avgRating = (newReview.rating +
-			 (kindergarten.reviews.length *kindergarten.avgRating))
+				(kindergarten.reviews.length *kindergarten.avgRating))
 			/
 			(kindergarten.reviews.length + 1)
 			kindergarten.reviews.push(newReview)
@@ -88,7 +91,7 @@ router.route('/kindergartens/:id/reviews')
 		}
 		kindergarten.save(function(err){
 			if (err){
-				 res.send(err)
+				res.send(err)
 			}
 			else {
 				res.json({message:"Review succesfully added!"})
@@ -167,6 +170,38 @@ router.get('/search/:searchText',function(req,res){
 		}
 	})
 })
+
+router.post('/register', function(req,res){
+	var newUser = new User();
+	newUser.username = req.body.username;
+	newUser.password = req.body.password;
+	newUser.save(function(err){
+		if (err){
+			res.send(err)
+		}
+		else {
+			res.json({"message":"User succesfully registered!"})
+		}
+	})
+})
+
+router.post('/login', function(req,res){
+	User.findOne({username:req.body.username},function(err,user){
+		if (user){
+			user.comparePassword(req.body.password,function(err,isMatch){
+				var token = jwt.sign(user.toJSON(), config.secret, {
+					expiresIn:10080
+				
+			})
+			res.json({success:true, token:'JWT '+token})
+		})
+		}
+		else {
+			res.send({success:false,message:'Authentication failed'})
+		}
+	})
+})
+app.use(auth.initialize())
 app.use('/api',router);
 
 app.listen(port)
